@@ -10,12 +10,12 @@ Tests = namedtuple("Tests", ["status", "colour"])
 tests_badge = Blueprint('tests_badge', __name__)
 
 
-@tests_badge.route("/tests/<path:job_name>", methods=['GET'])
-def send_tests_badge(job_name):
+@tests_badge.route("/tests/<path:job_name>/<path:branch_name>", methods=['GET'])
+def send_tests_badge(job_name, branch_name):
     if job_name == "favicon.ico":
         return "", 200
 
-    jurl = generate_jenkins_api_url(job_name)
+    jurl = generate_jenkins_api_url(job_name, branch_name)
     auth = (current_app.config['JENKINS_USERNAME'],
             current_app.config['JENKINS_TOKEN'])
     auth = None if auth == (None, None) else auth
@@ -42,9 +42,9 @@ def send_error_badge():
     return send_file(path, mimetype="image/svg+xml", cache_timeout=30), 200
 
 
-def generate_jenkins_api_url(job_name):
-    api_endpoint = ("job/{}/lastBuild/api/json"
-           "").format(job_name)
+def generate_jenkins_api_url(job_name, branch_name):
+    api_endpoint = ("job/{0}/job/{1}/lastBuild/api/json"
+           "").format(job_name, branch_name)
 
     return urljoin(current_app.config["JENKINS_BASE_URL"] + "/", api_endpoint)
 
