@@ -55,4 +55,7 @@ def create_app(from_envvar=False, base_url=None, username=None, token=None,
     from jenkins_badges.coverage_badge import coverage_badge
     app.register_blueprint(coverage_badge)
 
+    from jenkins_badges.tests_badge import tests_badge
+    app.register_blueprint(tests_badge)
+
     return app
