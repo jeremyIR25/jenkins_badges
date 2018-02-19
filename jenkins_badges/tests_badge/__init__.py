@@ -58,11 +58,15 @@ def extract_tests_number(jresp):
 
 def get_build_status(result):
     if result == "FAILURE":
-        return "failure"
+        return "failing"
     elif result == "SUCCESS":
         return "passing"
     elif result == "UNSTABLE":
         return "unstable"
+    elif result ==  "ABORTED":
+        return "aborted"
+    elif not result:
+        return "running"
     else:
         return "unknown"
 
@@ -71,11 +75,13 @@ def generate_shields_url(c):
 
 
 def get_colour(status):
-    if status == "failure":
+    if status == "failing":
         return "red"
     elif status == "unstable":
         return "yellow"
-    elif status == "success":
+    elif status == "passing":
         return "brightgreen"
+    elif status == "running":
+        return "blue"
     else:
         return "lightgrey"
