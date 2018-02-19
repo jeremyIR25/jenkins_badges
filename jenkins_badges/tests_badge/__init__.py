@@ -119,12 +119,12 @@ def read_file_results_stats(filename, service_name):
 
 def get_test_colour(status, result):
     yellow_threshold = current_app.config['TESTS_RESULTS_YELLOW_THRESHOLD']
-    red_threshold = current_app.config['TESTS_RESULTS_YELLOW_THRESHOLD']
+    red_threshold = current_app.config['TESTS_RESULTS_RED_THRESHOLD']
 
     test_passed_ratio = round(float(result.passed) / float(result.totals), 2)
     if test_passed_ratio > yellow_threshold:
         return "brightgreen"
-    elif test_passed_ratio <= yellow_threshold and test_passed_ratio >= red_threshold:
+    elif test_passed_ratio >= red_threshold:
         return "yellow"
     else:
         return "red"
