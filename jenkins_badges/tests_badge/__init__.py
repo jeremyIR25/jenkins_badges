@@ -5,6 +5,7 @@ import json
 import os.path
 from jsonschema import validate, ValidationError
 from collections import namedtuple
+from werkzeug.contrib.cache import SimpleCache
 
 from six.moves.urllib_parse import urljoin
 
@@ -12,6 +13,7 @@ Tests = namedtuple("Tests", ["status", "colour", "service", "passed", "totals"])
 ServiceResults = namedtuple("ServiceResults", ["result", "passed", "failed", "total"])
 
 tests_badge = Blueprint('tests_badge', __name__)
+cache = SimpleCache()
 
 @tests_badge.route("/tests/<path:job_name>/<path:branch_name>", defaults={'service_name': None}, methods=['GET'])
 @tests_badge.route("/tests/<path:job_name>/<path:branch_name>/<path:service_name>", methods=['GET'])
@@ -30,12 +32,20 @@ def send_tests_badge(job_name, branch_name, service_name):
 
     tests = extract_tests_number(jresp, service_name)
     surl = generate_shields_url(tests)
-    sresp = requests.get(surl, stream=True)
-    print("GET {} {}".format(sresp.status_code, surl))
-    if sresp.status_code != 200:
-        return send_error_badge()
 
-    path = io.BytesIO(sresp.content)
+    path = cache.get(surl)
+    if path is None:
+        print("Not found in cache")
+        sresp = requests.get(surl, stream=True)
+        print("GET {} {}".format(sresp.status_code, surl))
+        if sresp.status_code != 200:
+            return send_error_badge()
+
+        path = io.BytesIO(sresp.content)
+        cache.set(surl, path, timeout=5 * 60)
+    else:
+        print("Found in cache: URL " + surl)
+
     print("SENDING coverage badge of {}".format(tests.status))
     return send_file(path, mimetype="image/svg+xml", cache_timeout=30), 200
 
@@ -100,7 +110,7 @@ def generate_shields_url2(c):
     return ("https://img.shields.io/badge/tests-{0}-{1}.svg".format(c.status, c.colour))
 
 def generate_shields_url(c):
-    if c.status == "passing" or c.status == "failure" and c.totals != 0:
+    if c.status == "passing" or c.status == "failing" and c.totals != 0:
         service_colour = get_test_colour(get_build_status(c.status), c)
         return ("https://img.shields.io/badge/tests-%20{0}%20/%20{1}%20-{2}.svg".format(c.passed, c.totals, service_colour))
 
